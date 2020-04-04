@@ -1,0 +1,146 @@
+---
+title: "Scratchpad: St. Louis Transit Scores"
+author: "Hannah Shumway"
+date: "10/22/2018"
+output: html_document
+---
+Let's get our packages and the data in here:
+
+
+I'm making some new changes.
+
+```{r}
+library(tidyverse)
+library(ggplot2)    #for visualizations
+library(readxl) # for...excel
+library(dplyr)
+library(ggmap)
+library(e1071) 
+WalkTransitBikeScore <- read.csv("~/Downloads/WalkTransitBikeScore - Sheet1 (1).csv")
+View(WalkTransitBikeScore)
+
+```
+
+Now, let's do a little analysis:
+```{r}
+PctWhite <- WalkTransitBikeScore$PctWhite2010
+BikeSc <- WalkTransitBikeScore$Bike.Score
+WalkSc <- WalkTransitBikeScore$Walk.Score
+TransitSc <- WalkTransitBikeScore$Transit.Score
+CompositeSc <- WalkTransitBikeScore$Composite
+
+ggplot(WalkTransitBikeScore, aes(x=PctWhite, y=BikeSc)) + geom_point() + geom_smooth(method=lm) + labs(x="Percent White", y="Bike Score", title=" Figure 2: Bike Score by Percentage White Population in St. Louis Neighborhoods")
+cor.test(x=PctWhite, y=BikeSc, method="kendall") 
+
+require(dplyr)
+Above75PctW <- WalkTransitBikeScore %>% filter(PctWhite > 75)
+cor.test(BikeSc, PctWhite)
+
+cor.test(x=Above75PctW$PctWhite2010, y=Above75PctW$Transit.Score, method="kendall")
+
+
+Below25PctW <- WalkTransitBikeScore %>% filter(PctWhite < 25)
+cor.test(x=Below25PctW$PctWhite2010, y=Below25PctW$Transit.Score, method="kendall")
+```
+Biking is interesting...overall being in a whiter neighborhood correlates with having a better bike score, but not for neighborhoods that are over 50% white, and it's still a somewhat diminished effect when you look at only neighborhoods below 50% white...
+
+Now, for other modes:
+```{r}
+cor.test(x= PctWhite, y=CompositeSc)
+ggplot(WalkTransitBikeScore, aes(x=PctWhite, y=CompositeSc)) + geom_point() + geom_smooth()
+
+cor.test(x=PctWhite, y=WalkSc, method="kendall")
+ggplot(WalkTransitBikeScore, aes(x=PctWhite, y=WalkSc)) + geom_point() + geom_smooth()
+
+cor.test(x=PctWhite, y=TransitSc, method="kendall")
+ggplot(WalkTransitBikeScore, aes(x=PctWhite, y=TransitSc)) + geom_point() + geom_smooth()
+
+```
+
+Pullin up a quick histogram to see if bike scores in StL are normally distributed.
+```{r}
+ggplot(WalkTransitBikeScore, aes(BikeSc)) + geom_histogram() # the distribution looks normal
+mean(BikeSc)
+median(BikeSc) # mean and median are VERY close-- this is a normal distribution
+```
+
+so, incomes :)
+```{r}
+MedHHIncome <- WalkTransitBikeScore$MedHHInc
+WalkTransitBikeScoreNoWy <- WalkTransitBikeScore %>% filter(MedHHInc < 100000)
+cor.test(MedHHIncome, BikeSc)
+IncNoWy <- WalkTransitBikeScoreNoWy$MedHHInc
+cor.test(IncNoWy, WalkTransitBikeScoreNoWy$Bike.Score, method="kendall")
+
+```
+
+Now let's visualize those
+```{r}
+ggplot(WalkTransitBikeScore, aes(MedHHIncome, BikeSc)) + geom_point()
+ggplot(WalkTransitBikeScoreNoWy, aes(IncNoWy, WalkTransitBikeScoreNoWy$`Bike Score`)) + geom_point() + geom_smooth(method='lm') + labs(x="Median Household Income", y="Bike Score", title="Figure 3: Bike Score by Median Household Income in St. Louis Neighborhoods")
+```
+
+
+
+Let's look at MY DATA!!!!
+```{r}
+library(ggplot2)
+MyResearch <- read.csv("~/Downloads/ResearchProject.csv")
+
+
+MyResearch$What.is.your.total.household.yearly.income..approximately. <- factor(MyResearch$What.is.your.total.household.yearly.income..approximately., levels = c("Less than $25,000","$25,000 - $34,999","$35,000 to $49,999","$50,000 to $74,999","$75,000 to $99,999","$100,000 to $149,999","$150,000 or more", "Prefer not to answer"))
+
+# INCOME
+ggplot(MyResearch, aes(MyResearch$What.is.your.total.household.yearly.income..approximately.)) + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab("Estimated Total Household Yearly Income") + ylab("Count") + ggtitle("Question 19: What is your total household yearly income, approximately?")
+
+MyResearch$What.race.s..do.you.identify.as..For.purposes.of.this.question..persons.of.Spanish..Hispanic..or.Latino.origin.may.be.of.any.race.[MyResearch$What.race.s..do.you.identify.as..For.purposes.of.this.question..persons.of.Spanish..Hispanic..or.Latino.origin.may.be.of.any.race.==""] <- NA
+
+# RACE
+ggplot(MyResearch, aes(MyResearch$What.race.s..do.you.identify.as..For.purposes.of.this.question..persons.of.Spanish..Hispanic..or.Latino.origin.may.be.of.any.race., na.rm=TRUE)) + geom_bar(na.rm=TRUE) + theme(axis.text.x = element_text(angle = 60, hjust = 1)) + xlab("Race") + ylab("Count") + ggtitle("Question 21: What race(s) do you identify as?")
+
+MyResearch$Are.you.of.Hispanic..Latino..or.Spanish.origin.[MyResearch$Are.you.of.Hispanic..Latino..or.Spanish.origin.==""] <- NA
+
+#hispanic
+ggplot(MyResearch, aes(MyResearch$Are.you.of.Hispanic..Latino..or.Spanish.origin., na.rm=TRUE)) + geom_bar(na.rm=TRUE) + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab("Hispanic, Latino, or Spanish Origin") + ylab("Count") + ggtitle("Question 20: Are you of Hispanic, Latino, or Spanish Origin?")
+
+
+MyResearch$How.old.are.you.[MyResearch$How.old.are.you. == ""] <-NA
+
+
+# AGE
+ggplot(MyResearch, aes(MyResearch$How.old.are.you., na.rm=TRUE)) + geom_histogram(binwidth = 1) + xlab("Age") + ylab("Count") + ggtitle("Question 22: How old are you?")
+
+```
+
+
+Time to look more deeply into some transit data.
+```{r}
+ggplot(WalkTransitBikeScore, aes(MedHHIncome, TransitSc)) + geom_point() +geom_smooth(method='lm') 
+
+ggplot(WalkTransitBikeScore, aes(x=PctWhite, y=TransitSc)) + geom_point() + geom_smooth(method='lm') +labs(x="Percent White", y="Transit Score", title="Figure 4: Transit Score by Percent White Population in St. Louis Neighborhoods")
+
+ggplot(WalkTransitBikeScoreNoWy, aes(IncNoWy, WalkTransitBikeScoreNoWy$Transit.Score)) + geom_point() + geom_smooth(method='lm') + labs(x="Median Household Income", y="Transit Score", title="Figure 5: Transit Score by Median Household Income in St. Louis Neighborhoods")
+
+# transit is serving lower income and less-white neighborhoods just about as well as it is any other neighborhood... there's a lot of variation, esp on income, but there's simply no statistically significant correlation
+cor.test(IncNoWy, WalkTransitBikeScoreNoWy$Transit.Score, method="kendall")
+cor.test(MedHHIncome, TransitSc, method= "kendall")
+cor.test(PctWhite, TransitSc, method="kendall")
+
+```
+
+Alright fam, it's time for our third and final installment: walking.
+```{r}
+
+ggplot(WalkTransitBikeScoreNoWy, aes(IncNoWy, WalkTransitBikeScoreNoWy$Walk.Score)) + geom_point() +geom_smooth(method='lm') + labs(x="Median Household Income", y="Walk Score", title="Figure 9: Walk Score by Median Household Income in St. Louis Neighborhoods")
+
+ggplot(WalkTransitBikeScore, aes(x=PctWhite, y=WalkSc)) + geom_point() + geom_smooth(method='lm') +labs(x="Percent White", y="Walk Score", title="Figure 8: Walk Score by Percent White Population in St. Louis Neighborhoods")
+
+cor.test(IncNoWy, WalkTransitBikeScoreNoWy$Walk.Score, method="kendall")
+cor.test(MedHHIncome, WalkSc, method= "kendall")
+cor.test(PctWhite, WalkSc, method="kendall")
+```
+
+
+
+
+
